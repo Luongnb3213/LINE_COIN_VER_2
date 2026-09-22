@@ -20,6 +20,7 @@ from flows.phase1_line import (
     _ADD_ACCOUNT_MARKERS,
     _COUNTRY_CODE,
     _CREATE_ACCOUNT_TITLE,
+    _find_google_password_field,
     _HOME_ACTIVITY,
     _HOME_NAME,
     _NAME_GROUP,
@@ -164,6 +165,23 @@ class VisibleAccountEmailsTests(unittest.TestCase):
     def test_empty_tree_yields_no_emails(self) -> None:
         tree = _tree([])
         self.assertEqual(visible_account_emails(tree), [])
+
+
+class GooglePasswordFieldTests(unittest.TestCase):
+    def test_password_screen_with_try_another_way_is_still_password_screen(self) -> None:
+        field = UiNode(
+            class_name="android.widget.EditText",
+            bounds=Rect(0, 0, 200, 60),
+        )
+        tree = _tree([
+            _node("Welcome"),
+            _node("Show password"),
+            _node("TRY ANOTHER WAY"),
+            _node("NEXT"),
+            field,
+        ])
+
+        self.assertIs(_find_google_password_field(tree), field)
 
 
 if __name__ == "__main__":

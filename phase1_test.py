@@ -268,6 +268,20 @@ def _run_phase1(
         resolved_index = matches[0].index
     elif index is not None:
         resolved_index = index
+    elif account.google_instance:
+        matches = [inst for inst in instances if inst.name == account.google_instance]
+        if not matches:
+            _LOG.error(
+                "[%s] Excel đang map Google instance `%s` nhưng LDPlayer không có instance này — "
+                "dừng để tránh chạy nhầm máy.",
+                email, account.google_instance,
+            )
+            return 1
+        resolved_index = matches[0].index
+        _LOG.info(
+            "[%s] Không chỉ định index/name, dùng Google instance trong Excel: %s (index=%s)",
+            email, account.google_instance, resolved_index,
+        )
     else:
         resolved_index = instances[0].index
         _LOG.info("Không chỉ định index/name, dùng instance đầu tiên: index=%s", resolved_index)

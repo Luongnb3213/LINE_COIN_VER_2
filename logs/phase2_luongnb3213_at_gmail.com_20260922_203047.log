@@ -1,0 +1,77 @@
+2026-09-22 20:30:47  INFO     line_coin_ver2.phase2_test  Log file riêng cho lần chạy này: C:\Users\ADMIN\Desktop\FPT\LINE_COIN_VER_2\logs\phase2_luongnb3213_at_gmail.com_20260922_203047.log
+2026-09-22 20:30:47  INFO     line_coin_ver2.phase2_test  [luongnb3213@gmail.com] old_gift_code=- old_gift_code_ministop=- -> sẽ chạy airwallet=True ministop=True (source=both)
+2026-09-22 20:30:47  INFO     line_coin_ver2.device  Đã map: LDPlayer[1] `LineViet-g01` -> adb=emulator-5556 -> xiaowei serial=emulator-5556 onlySerial=emulator-5556 model=PJD110
+2026-09-22 20:30:48  INFO     line_coin_ver2.phase2_test  [luongnb3213@gmail.com] Bắt đầu Phase 2: ldplayer_index=1 instance=LineViet-g01 adb_serial=emulator-5556 xiaowei_serial=emulator-5556 source=both (airwallet=True ministop=True)
+2026-09-22 20:30:48  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][airwallet] Mở Chrome lần 1/4: https://airwallet-utapri-202609.belugacpn.jp/top?utm_source=chatgpt.com
+2026-09-22 20:31:10  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 20:31:14  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][airwallet] scroll #1 tìm `応募規約に同意する`: found=True bounds=[240,522][279,562]
+2026-09-22 20:31:14  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com] tap(agree-checkbox) text='応募規約に同意する' bounds=[240,522][279,562] target_bounds=[240,522][279,562] center=(259,542)
+2026-09-22 20:31:14  INFO     line_coin_ver2.device  Tap node CheckBox text="応募規約に同意する" [240,522][279,562] tại (259, 542)
+2026-09-22 20:31:14  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com] tapped(agree-checkbox) center=(259,542)
+2026-09-22 20:31:17  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com] tap(receive-button) text='ギフトコードを受け取る （LINEを認証する）' bounds=[54,585][666,682] target_bounds=[54,585][666,682] center=(360,633)
+2026-09-22 20:31:17  INFO     line_coin_ver2.device  Tap node Button text="ギフトコードを受け取る （LINEを認証する）" [54,585][666,682] tại (360, 633)
+2026-09-22 20:31:17  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com] tapped(receive-button) center=(360,633)
+2026-09-22 20:31:29  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][airwallet] wait-auth screen=unknown
+2026-09-22 20:31:32  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][airwallet] wait-auth screen=unknown
+2026-09-22 20:31:36  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][airwallet] wait-auth screen=auth_allow
+2026-09-22 20:31:36  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][airwallet] auth screen: allow found, bấm.
+2026-09-22 20:31:36  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com] tap(auth-allow) text='Allow' bounds=[24,1117][696,1191] target_bounds=[24,1117][696,1191] center=(360,1154)
+2026-09-22 20:31:36  INFO     line_coin_ver2.device  Tap node Button text="Allow" [24,1117][696,1191] tại (360, 1154)
+2026-09-22 20:31:36  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com] tapped(auth-allow) center=(360,1154)
+2026-09-22 20:31:44  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][airwallet] wait-auth screen=auth_screen
+2026-09-22 20:31:45  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][airwallet] auth screen waiting: allow not found, tiếp tục chờ.
+2026-09-22 20:31:46  WARNING  line_coin_ver2.phase2  [luongnb3213@gmail.com][airwallet] bước xác thực lần 1/2 thất bại: Hết thời gian chờ màn hình xác thực (20s).
+2026-09-22 20:31:46  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][airwallet] Mở Chrome lần 1/4: https://airwallet-utapri-202609.belugacpn.jp/top?utm_source=chatgpt.com
+2026-09-22 20:32:08  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com] tap(agree-checkbox) text='応募規約に同意する' bounds=[240,522][279,562] target_bounds=[240,522][279,562] center=(259,542)
+2026-09-22 20:32:08  INFO     line_coin_ver2.device  Tap node CheckBox text="応募規約に同意する" [240,522][279,562] tại (259, 542)
+2026-09-22 20:32:08  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com] tapped(agree-checkbox) center=(259,542)
+2026-09-22 20:32:11  WARNING  line_coin_ver2.phase2  [luongnb3213@gmail.com][airwallet] bước xác thực lần 2/2 thất bại: Node `Button text="ギフトコードを受け取る （LINEを認証する）" [54,585][666,682]` (receive-button) không bấm được và không có tổ tiên bấm được.
+2026-09-22 20:32:11  WARNING  line_coin_ver2.phase2  [luongnb3213@gmail.com] AirWallet thất bại: Không qua được bước xác thực sau 2 lần: Node `Button text="ギフトコードを受け取る （LINEを認証する）" [54,585][666,682]` (receive-button) không bấm được và không có tổ tiên bấm được.
+2026-09-22 20:32:11  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] Mở Chrome lần 1/4: https://www.ministop.co.jp/campaign/260914airwallet-cp/
+2026-09-22 20:32:33  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com] tap(ministop-line-button) text='' bounds=[0,0][0,0] target_bounds=[0,0][0,0] center=(0,0)
+2026-09-22 20:32:33  INFO     line_coin_ver2.device  Tap node View desc="LINE認証 & 友だち追加" [0,0][0,0] tại (0, 0)
+2026-09-22 20:32:33  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com] tapped(ministop-line-button) center=(0,0)
+2026-09-22 20:32:35  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] wait-auth screen=auth_screen
+2026-09-22 20:32:35  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] auth screen waiting: allow not found, tiếp tục chờ.
+2026-09-22 20:32:39  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] wait-auth screen=auth_screen
+2026-09-22 20:32:39  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] auth screen waiting: allow not found, tiếp tục chờ.
+2026-09-22 20:32:42  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] wait-auth screen=auth_screen
+2026-09-22 20:32:42  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] auth screen waiting: allow not found, tiếp tục chờ.
+2026-09-22 20:32:45  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] wait-auth screen=auth_screen
+2026-09-22 20:32:45  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] auth screen waiting: allow not found, tiếp tục chờ.
+2026-09-22 20:32:48  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] wait-auth screen=auth_screen
+2026-09-22 20:32:48  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] auth screen waiting: allow not found, tiếp tục chờ.
+2026-09-22 20:32:51  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] wait-auth screen=auth_screen
+2026-09-22 20:32:51  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] auth screen waiting: allow not found, tiếp tục chờ.
+2026-09-22 20:32:54  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] wait-auth screen=auth_screen
+2026-09-22 20:32:54  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] auth screen waiting: allow not found, tiếp tục chờ.
+2026-09-22 20:32:55  WARNING  line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] bước xác thực lần 1/2 thất bại: Hết thời gian chờ màn hình xác thực (20s).
+2026-09-22 20:32:55  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] Mở Chrome lần 1/4: https://www.ministop.co.jp/campaign/260914airwallet-cp/
+2026-09-22 20:33:17  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 20:33:20  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] scroll #1 tìm nút LINE Ministop: found=False bounds=- screen=Web View
+2026-09-22 20:33:20  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 20:33:24  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] scroll #2 tìm nút LINE Ministop: found=False bounds=- screen=Web View
+2026-09-22 20:33:24  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 20:33:27  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] scroll #3 tìm nút LINE Ministop: found=False bounds=- screen=Web View
+2026-09-22 20:33:27  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 20:33:30  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] scroll #4 tìm nút LINE Ministop: found=False bounds=- screen=Web View
+2026-09-22 20:33:30  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 20:33:34  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] scroll #5 tìm nút LINE Ministop: found=False bounds=- screen=Web View
+2026-09-22 20:33:34  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 20:33:37  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] scroll #6 tìm nút LINE Ministop: found=False bounds=- screen=Web View
+2026-09-22 20:33:37  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 20:33:41  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] scroll #7 tìm nút LINE Ministop: found=False bounds=- screen=Web View
+2026-09-22 20:33:41  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 20:33:44  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] scroll #8 tìm nút LINE Ministop: found=False bounds=- screen=Web View
+2026-09-22 20:33:44  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 20:33:47  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] scroll #9 tìm nút LINE Ministop: found=False bounds=- screen=Web View
+2026-09-22 20:33:47  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 20:33:51  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] scroll #10 tìm nút LINE Ministop: found=False bounds=- screen=Web View
+2026-09-22 20:33:51  WARNING  line_coin_ver2.phase2  [luongnb3213@gmail.com][ministop] bước xác thực lần 2/2 thất bại: Không tìm thấy nút `LINE認証 & 友だち追加`.
+2026-09-22 20:33:51  WARNING  line_coin_ver2.phase2  [luongnb3213@gmail.com] Ministop thất bại: Không qua được bước xác thực sau 2 lần: Không tìm thấy nút `LINE認証 & 友だち追加`.
+2026-09-22 20:33:51  INFO     line_coin_ver2.phase2  [luongnb3213@gmail.com] Kết quả Phase 2: status=FAILED gift_code=- gift_code_ministop=-
+2026-09-22 20:33:51  INFO     line_coin_ver2.phase2_test  [luongnb3213@gmail.com] Merge mã: old=(-,-) new=(-,-) final=(-,-)
+2026-09-22 20:33:51  INFO     line_coin_ver2.xlsx_store  [luongnb3213@gmail.com] Đã ghi Excel: status=FAILED gift_code=- gift_code_ministop=- -> C:\Users\ADMIN\Downloads\lineviet_test_3_accounts.xlsx
+2026-09-22 20:33:51  INFO     line_coin_ver2.phase2_test  [luongnb3213@gmail.com] Dọn dẹp: force-stop Chrome + LINE (chỉ stop app, KHÔNG xoá app data).
+2026-09-22 20:33:51  INFO     line_coin_ver2.phase2_test  [luongnb3213@gmail.com] Đã force-stop Chrome/LINE.
+2026-09-22 20:33:51  INFO     line_coin_ver2.phase2_test  PHASE2 TEST INCOMPLETE — email=luongnb3213@gmail.com status=FAILED gift_code=- gift_code_ministop=- excel_ok=True instance_removed=False

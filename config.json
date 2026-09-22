@@ -41,5 +41,13 @@
   "google_prepare_parallel": 1,
   "xiaowei_ws_url": "ws://127.0.0.1:22222/",
   "xiaowei_connect_timeout": 10.0,
-  "xiaowei_request_timeout": 20.0
+  "xiaowei_request_timeout": 20.0,
+  "prepared_google_instances": [
+    {
+      "name": "LineViet-g01",
+      "index": 1,
+      "email": "luongnb3213@gmail.com",
+      "status": "SUCCESS"
+    }
+  ]
 }

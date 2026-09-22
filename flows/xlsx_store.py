@@ -67,11 +67,13 @@ class AccountRow:
 
     @property
     def google_instance(self) -> str:
-        return ""
+        parts = self.google_instance_status.split("|", 2)
+        return parts[1].strip() if len(parts) >= 2 else ""
 
     @property
     def google_prepare_message(self) -> str:
-        return ""
+        parts = self.google_instance_status.split("|", 2)
+        return parts[2].strip() if len(parts) >= 3 else ""
 
 
 class XlsxStoreError(RuntimeError):
@@ -234,6 +236,37 @@ class XlsxStore:
                 break
         return rows
 
+    def get_runnable_accounts(self, limit: int = 0) -> list[AccountRow]:
+        """Đọc các dòng còn việc phải chạy, theo đúng thứ tự trong sheet.
+
+        Khác `get_pending_accounts` chỉ xét Phase 1: GUI full flow cần pick
+        lại cả dòng đã `line_status=SUCCESS` nhưng Phase 2 chưa `SUCCESS` hoặc
+        còn thiếu một trong hai mã gift code.
+        """
+        wb = self._load()
+        ws = self._sheet(wb)
+        headers = self._header_map(ws)
+        email_col = headers.get(_EMAIL_HEADER)
+        if email_col is None:
+            raise XlsxStoreError(f"Sheet `{self._sheet_name}` thiếu cột `{_EMAIL_HEADER}`.")
+        cols = self._account_columns(headers)
+
+        rows: list[AccountRow] = []
+        for row_idx in range(2, ws.max_row + 1):
+            email = str(ws.cell(row=row_idx, column=email_col).value or "").strip()
+            if not email:
+                continue
+            account = self._row_to_account(ws, cols, row_idx, email)
+            line_done = account.line_status.strip().upper() == "SUCCESS"
+            phase2_done = account.phase2_status.strip().upper() == "SUCCESS"
+            has_both_codes = bool(account.gift_code.strip() and account.gift_code_ministop.strip())
+            if line_done and phase2_done and has_both_codes:
+                continue
+            rows.append(account)
+            if limit > 0 and len(rows) >= limit:
+                break
+        return rows
+
     def get_account(self, email: str) -> AccountRow | None:
         """Đọc MỘT dòng theo email, bất kể `line_status` hiện tại.
 
@@ -336,8 +369,12 @@ class XlsxStore:
         if row_idx is None:
             raise XlsxStoreError(f"Không tìm thấy dòng nào khớp email `{email}` trong `{self._path}`.")
 
-        del instance_name, message
-        ws.cell(row=row_idx, column=headers["google_instance_status"], value=status)
+        value = status
+        if instance_name:
+            value = f"{value}|{instance_name}"
+        if message:
+            value = f"{value}|{message[:_MAX_CELL_LEN]}"
+        ws.cell(row=row_idx, column=headers["google_instance_status"], value=value)
 
         self._atomic_save(wb)
         _LOG.info(

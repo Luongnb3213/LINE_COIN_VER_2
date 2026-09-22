@@ -18,6 +18,7 @@ except Exception:  # pragma: no cover
 from flows.phase2 import CHROME_PACKAGE, LINE_PACKAGE
 from flows.google_prepare import GoogleCredential, next_prepare_names, prepare_google_instance
 from flows.xlsx_store import XlsxStore, XlsxStoreError
+from flows.phase1_line import google_accounts_from_dumpsys
 from device.controller import DeviceController
 from ldplayer.adapter import LDPlayerAdapter, LDPlayerConfig
 from phase1_test import run_phase1_once
@@ -59,6 +60,7 @@ class Phase2GUI(tk.Tk):
         self.running = False
         self.stopping = False
         self.config_data = _load_config_dict()
+        self.config_lock = threading.Lock()
         self.log_queue: "queue.Queue[str]" = queue.Queue()
         self.vars: dict[str, tk.Variable] = {}
         self.stop_event: threading.Event | None = None
@@ -156,7 +158,7 @@ class Phase2GUI(tk.Tk):
         ttk.Entry(top, textvariable=self._var("xiaowei_ws_url", data.get("xiaowei_ws_url", DEFAULT_XIAOWEI_WS)),
                   width=30).grid(row=8, column=1, sticky="w", **pad)
         ttk.Label(top, text="Instance index").grid(row=8, column=2, sticky="e", **pad)
-        ttk.Entry(top, textvariable=self._var("instance_index", "0"), width=8).grid(row=8, column=3, sticky="w", **pad)
+        ttk.Entry(top, textvariable=self._var("instance_index", ""), width=8).grid(row=8, column=3, sticky="w", **pad)
         ttk.Label(top, text="hoặc name").grid(row=8, column=4, sticky="e", **pad)
         ttk.Entry(top, textvariable=self._var("instance_name", ""), width=20).grid(row=8, column=5, sticky="w", **pad)
         top.columnconfigure(1, weight=1)
@@ -288,7 +290,10 @@ class Phase2GUI(tk.Tk):
             rows = self._ldplayer_adapter().list_instances()
             prepared = self._google_prepare_by_instance()
             for row in rows:
-                account = prepared.get(row.name)
+                account = prepared.get(row.name) or prepared.get(str(row.index))
+                actual_google = self._read_google_email_from_running_instance(row) or (
+                    account.get("email", "") if account else ""
+                )
                 self.google_tree.insert(
                     "",
                     "end",
@@ -297,8 +302,8 @@ class Phase2GUI(tk.Tk):
                         row.index,
                         row.name,
                         "running" if row.running else "stopped",
-                        account.google_prepare_status if account else "",
-                        account.email if account else "",
+                        actual_google,
+                        account.get("email", "") if account else "",
                     ),
                 )
             running = sum(1 for row in rows if row.running)
@@ -307,7 +312,49 @@ class Phase2GUI(tk.Tk):
             self.google_status.configure(text=f"không đọc được instance: {exc}")
 
     def _google_prepare_by_instance(self):
-        return {}
+        prepared: dict[str, dict[str, str]] = {}
+        for item in self.config_data.get("prepared_google_instances", []) or []:
+            if not isinstance(item, dict):
+                continue
+            email = str(item.get("email") or "").strip()
+            status = str(item.get("status") or "").strip()
+            name = str(item.get("name") or "").strip()
+            index = str(item.get("index") or "").strip()
+            if name and email:
+                prepared[name] = {"email": email, "status": status or "SUCCESS"}
+            if index and email:
+                prepared[index] = {"email": email, "status": status or "SUCCESS"}
+
+        xlsx_path = str(self.vars["xlsx_path"].get()).strip()
+        if not xlsx_path:
+            return prepared
+        try:
+            store = XlsxStore(xlsx_path, str(self.config_data.get("active_sheet") or "Mails"))
+            for account in store.get_runnable_accounts(limit=0):
+                if account.google_instance and account.email:
+                    prepared[account.google_instance] = {
+                        "email": account.email,
+                        "status": account.google_prepare_status or account.google_instance_status,
+                    }
+        except Exception as exc:  # noqa: BLE001 - refresh panel should not break the GUI
+            self.log_queue.put(f"Không đọc được mapping Google từ Excel: {exc}")
+        return prepared
+
+    def _read_google_email_from_running_instance(self, row) -> str:
+        if not row.running:
+            return ""
+        try:
+            ldplayer = self._ldplayer_adapter()
+            serial = ldplayer.adb_serial(int(row.index))
+            output = ldplayer.adb_shell_read(
+                serial,
+                'dumpsys account | grep "Account {"',
+                timeout=3.0,
+            )
+            accounts = google_accounts_from_dumpsys(output)
+            return accounts[0] if accounts else ""
+        except Exception:
+            return ""
 
     def _on_instance_selected(self, _event=None):
         selected = self.google_tree.selection()
@@ -318,6 +365,8 @@ class Phase2GUI(tk.Tk):
         if len(values) >= 2:
             self.vars["instance_index"].set(str(values[0]))
             self.vars["instance_name"].set("")
+        if len(values) >= 5 and str(values[4]).strip():
+            self.vars["email"].set(str(values[4]).strip())
 
     def delete_selected_instance(self):
         if self.running or self.stopping:
@@ -357,6 +406,7 @@ class Phase2GUI(tk.Tk):
             messagebox.showerror("Xóa instance", f"Xóa instance thất bại:\n{exc}")
             self.log_queue.put(f"Xóa instance {index} ({name}) thất bại: {exc}")
             return
+        self._forget_prepared_google(index=index, name=name)
         self.log_queue.put(f"Đã xóa hẳn instance {index} ({name}).")
         if str(self.vars["instance_index"].get()).strip() == str(index):
             self.vars["instance_index"].set("")
@@ -446,6 +496,7 @@ class Phase2GUI(tk.Tk):
         self.running = True
         self.stopping = False
         self.stop_event = threading.Event()
+        self._bind_run_target(self.stop_event, index, name)
         self.start_button.configure(state="disabled")
         self.stop_button.configure(state="normal")
         threading.Thread(
@@ -493,6 +544,7 @@ class Phase2GUI(tk.Tk):
                     try:
                         prepared = future.result()
                         self._xlsx_store().update_google_prepare_success(credential.email, prepared.name)
+                        self._remember_prepared_google(prepared)
                         self.log_queue.put(
                             f"Chuẩn bị Google xong cho {credential.email}: {prepared.name} (index {prepared.index})"
                         )
@@ -511,6 +563,48 @@ class Phase2GUI(tk.Tk):
             code = 1
             self.log_queue.put(f"Chuẩn bị Google lỗi: {exc}")
         self.after(0, lambda: self._finish_run(code))
+
+    def _remember_prepared_google(self, prepared) -> None:
+        with self.config_lock:
+            data = _load_config_dict()
+            items = data.get("prepared_google_instances", [])
+            if not isinstance(items, list):
+                items = []
+            kept = []
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                same_name = str(item.get("name") or "") == prepared.name
+                same_index = str(item.get("index") or "") == str(prepared.index)
+                same_email = str(item.get("email") or "").casefold() == prepared.email.casefold()
+                if same_name or same_index or same_email:
+                    continue
+                kept.append(item)
+            kept.append({
+                "name": prepared.name,
+                "index": prepared.index,
+                "email": prepared.email,
+                "status": "SUCCESS",
+            })
+            data["prepared_google_instances"] = kept
+            CONFIG_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            self.config_data = data
+
+    def _forget_prepared_google(self, *, index: int, name: str) -> None:
+        with self.config_lock:
+            data = _load_config_dict()
+            items = data.get("prepared_google_instances", [])
+            if not isinstance(items, list):
+                return
+            kept = [
+                item for item in items
+                if isinstance(item, dict)
+                and str(item.get("name") or "") != name
+                and str(item.get("index") or "") != str(index)
+            ]
+            data["prepared_google_instances"] = kept
+            CONFIG_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            self.config_data = data
 
     def _xlsx_store(self) -> XlsxStore:
         return XlsxStore(
@@ -539,7 +633,7 @@ class Phase2GUI(tk.Tk):
             log=self.log_queue.put,
         )
 
-    def _resolve_target(self):
+    def _resolve_target(self, email: str = ""):
         index_raw = str(self.vars["instance_index"].get()).strip()
         name_raw = str(self.vars["instance_name"].get()).strip()
         if index_raw and name_raw:
@@ -553,7 +647,34 @@ class Phase2GUI(tk.Tk):
             except ValueError:
                 messagebox.showerror("Instance", f"Instance index phải là số nguyên, đang là `{index_raw}`.")
             return None
+        mapped_name = self._resolve_instance_name_for_email(email)
+        if mapped_name:
+            self.vars["instance_name"].set(mapped_name)
+            self.log_queue.put(f"[{email}] Tự chọn instance theo Google đã chuẩn bị: {mapped_name}")
+            return None, mapped_name
         return None, None
+
+    def _resolve_instance_name_for_email(self, email: str) -> str:
+        target = str(email or "").strip().casefold()
+        if not target:
+            return ""
+        xlsx_path = str(self.vars["xlsx_path"].get()).strip()
+        if xlsx_path:
+            try:
+                account = XlsxStore(
+                    xlsx_path,
+                    str(self.config_data.get("active_sheet") or "Mails"),
+                ).get_account(email)
+                if account is not None and account.google_instance:
+                    return account.google_instance
+            except Exception as exc:  # noqa: BLE001
+                self.log_queue.put(f"[{email}] Không đọc được Google instance từ Excel: {exc}")
+        for item in self.config_data.get("prepared_google_instances", []) or []:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("email") or "").strip().casefold() == target:
+                return str(item.get("name") or "").strip()
+        return ""
 
     def _resolve_email(self) -> str:
         email = str(self.vars["email"].get()).strip()
@@ -564,14 +685,14 @@ class Phase2GUI(tk.Tk):
         if not xlsx_path:
             raise XlsxStoreError("Chưa chọn file Excel và ô email đang trống.")
         active_sheet = str(self.config_data.get("active_sheet") or "Mails")
-        accounts = XlsxStore(xlsx_path, active_sheet).get_pending_accounts(limit=1)
+        accounts = XlsxStore(xlsx_path, active_sheet).get_runnable_accounts(limit=1)
         if not accounts:
             raise XlsxStoreError(
-                "Không có account pending trong Excel. Nếu muốn chạy lại một email đã SUCCESS, nhập email đó vào ô Email chạy."
+                "Không có account nào còn cần chạy trong Excel. Nếu muốn chạy lại thủ công, nhập email đó vào ô Email chạy."
             )
         picked = accounts[0].email
         self.vars["email"].set(picked)
-        self.log_queue.put(f"Tự chọn account pending đầu tiên từ Excel: {picked}")
+        self.log_queue.put(f"Tự chọn account còn việc phải chạy đầu tiên từ Excel: {picked}")
         return picked
 
     def start_run(self):
@@ -587,7 +708,7 @@ class Phase2GUI(tk.Tk):
         except XlsxStoreError as exc:
             messagebox.showerror("Bắt đầu", str(exc))
             return
-        target = self._resolve_target()
+        target = self._resolve_target(email)
         if target is None:
             return
 
@@ -611,6 +732,7 @@ class Phase2GUI(tk.Tk):
         self.running = True
         self.stopping = False
         self.stop_event = threading.Event()
+        self._bind_run_target(self.stop_event, index, name)
         self.start_button.configure(state="disabled")
         self.stop_button.configure(state="normal")
         index, name = target
@@ -639,6 +761,7 @@ class Phase2GUI(tk.Tk):
         self.running = True
         self.stopping = False
         self.stop_event = threading.Event()
+        self._bind_run_target(self.stop_event, index, name)
         self.start_button.configure(state="disabled")
         self.stop_button.configure(state="normal")
         index, name = target
@@ -705,15 +828,47 @@ class Phase2GUI(tk.Tk):
                 self.log_queue.put(f"Không force-stop được Chrome/LINE: {exc}")
         else:
             self.log_queue.put("Chưa bind được thiết bị — không có Chrome/LINE để force-stop.")
+        self._release_run_instance(stop_event)
         self.after(0, lambda: self._finish_run(1))
 
     def _finish_run(self, code: int):
+        if code != 0:
+            self._release_run_instance(self.stop_event)
         self.running = False
         self.stopping = False
         self.start_button.configure(state="normal")
         self.stop_button.configure(state="normal")
         self.log_queue.put("Hoàn tất." if code == 0 else "Kết thúc với lỗi hoặc đã dừng.")
         self.refresh_instance_panel()
+
+    def _bind_run_target(self, stop_event: threading.Event, index, name) -> None:
+        try:
+            stop_event.run_index = index  # type: ignore[attr-defined]
+            stop_event.run_name = name  # type: ignore[attr-defined]
+            stop_event.instance_released = False  # type: ignore[attr-defined]
+        except AttributeError:
+            pass
+
+    def _release_run_instance(self, stop_event: threading.Event | None) -> None:
+        if stop_event is None or getattr(stop_event, "instance_released", False):
+            return
+        index = getattr(stop_event, "run_index", None)
+        name = getattr(stop_event, "run_name", None)
+        bound = getattr(stop_event, "bound", None)
+        if index is None and bound is not None:
+            index = getattr(bound, "ldplayer_index", None)
+        try:
+            ldplayer = self._ldplayer_adapter()
+            if index is None and name:
+                index = ldplayer.index_of(str(name))
+            if index is None:
+                self.log_queue.put("Không xác định được instance để release.")
+                return
+            ldplayer.stop_instance(int(index))
+            stop_event.instance_released = True  # type: ignore[attr-defined]
+            self.log_queue.put(f"Đã release instance LDPlayer index {index} (stop máy, không xoá dữ liệu).")
+        except Exception as exc:
+            self.log_queue.put(f"Release instance thất bại: {exc}")
 
     def _drain_logs(self):
         try:

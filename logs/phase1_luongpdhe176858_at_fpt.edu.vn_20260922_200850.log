@@ -1,0 +1,28 @@
+2026-09-22 20:08:50  INFO     line_coin_ver2.phase1_test  Log file riêng cho lần chạy này: C:\Users\ADMIN\Desktop\FPT\LINE_COIN_VER_2\logs\phase1_luongpdhe176858_at_fpt.edu.vn_20260922_200850.log
+2026-09-22 20:08:50  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] display_name='choai' account_password=(từ Excel)
+2026-09-22 20:08:50  INFO     line_coin_ver2.phase1_test  Không chỉ định index/name, dùng instance đầu tiên: index=0
+2026-09-22 20:08:50  INFO     line_coin_ver2.phase1_test  Instance 0 chưa chạy, đang khởi động...
+2026-09-22 20:08:50  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Chờ Xiaowei nhận/boot instance index 0: Không tìm thấy thiết bị Xiaowei khớp với ADB serial `emulator-5554`. Danh sách Xiaowei hiện có (serial/onlySerial): (rỗng).
+2026-09-22 20:09:00  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Chờ Xiaowei nhận/boot instance index 0: Không tìm thấy thiết bị Xiaowei khớp với ADB serial `emulator-5554`. Danh sách Xiaowei hiện có (serial/onlySerial): (rỗng).
+2026-09-22 20:09:10  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Chờ Xiaowei nhận/boot instance index 0: Không tìm thấy thiết bị Xiaowei khớp với ADB serial `emulator-5554`. Danh sách Xiaowei hiện có (serial/onlySerial): (rỗng).
+2026-09-22 20:09:19  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Chờ Xiaowei nhận/boot instance index 0: Không tìm thấy thiết bị Xiaowei khớp với ADB serial `emulator-5554`. Danh sách Xiaowei hiện có (serial/onlySerial): (rỗng).
+2026-09-22 20:09:29  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Chờ Xiaowei nhận/boot instance index 0: Không tìm thấy thiết bị Xiaowei khớp với ADB serial `emulator-5554`. Danh sách Xiaowei hiện có (serial/onlySerial): (rỗng).
+2026-09-22 20:09:39  INFO     line_coin_ver2.device  Đã map: LDPlayer[0] `LDPlayer` -> adb=emulator-5554 -> xiaowei serial=emulator-5554 onlySerial=emulator-5554 model=GFE4J
+2026-09-22 20:09:40  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] Bắt đầu Phase 1: ldplayer_index=0 instance=LDPlayer adb_serial=emulator-5554 xiaowei_serial=emulator-5554
+2026-09-22 20:09:40  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] 1. Mở LINE...
+2026-09-22 20:09:46  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] App đã lên màn đăng ký.
+2026-09-22 20:10:00  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] tap(sign-up) text='Sign up' bounds=[323,1199][397,1225] target_bounds=[24,1176][696,1248] center=(360,1212)
+2026-09-22 20:10:00  INFO     line_coin_ver2.device  Tap node View [24,1176][696,1248] tại (360, 1212)
+2026-09-22 20:10:00  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] tapped(sign-up) center=(360,1212)
+2026-09-22 20:10:08  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] Đang ở màn 'Verify your account'.
+2026-09-22 20:10:08  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] 2. Đăng nhập Google...
+2026-09-22 20:10:11  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] tap(continue-with-google) text='Continue with Google' bounds=[24,1188][696,1260] target_bounds=[24,1188][696,1260] center=(360,1224)
+2026-09-22 20:10:11  INFO     line_coin_ver2.device  Tap node Button text="Continue with Google" id=google_login [24,1188][696,1260] tại (360, 1224)
+2026-09-22 20:10:11  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] tapped(continue-with-google) center=(360,1224)
+2026-09-22 20:10:11  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] Đã bấm 'Continue with Google', chờ bộ chọn tài khoản...
+2026-09-22 20:10:28  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] Phase 1 dừng theo yêu cầu người dùng.
+2026-09-22 20:10:28  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Đã dừng theo yêu cầu — không ghi Excel.
+2026-09-22 20:10:28  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Dọn dẹp: force-stop LINE (chỉ stop app).
+2026-09-22 20:10:28  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Đã force-stop LINE.
+2026-09-22 20:10:28  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Dừng theo yêu cầu — bỏ qua xoá instance dù --remove-instance có bật.
+2026-09-22 20:10:28  INFO     line_coin_ver2.phase1_test  PHASE1 TEST INCOMPLETE — email=luongpdhe176858@fpt.edu.vn status=STOPPED excel_ok=True ran_phase2=False phase2_ok=True instance_removed=False

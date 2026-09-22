@@ -136,6 +136,29 @@ class LDPlayerAdapter:
     def boot_timeout(self) -> int:
         return self._config.boot_timeout
 
+    @property
+    def adb_path(self) -> str:
+        return self._config.adb_path
+
+    def adb_command(self, serial: str, *args: str, timeout: float = 30.0) -> str:
+        """Run a direct ADB command against one LDPlayer serial.
+
+        This is intentionally a low-level escape hatch. Normal Phase 1/2 UI
+        control still goes through Xiaowei; Google-template preparation can use
+        direct ADB when Xiaowei has not picked up the freshly cloned emulator.
+        """
+        return _run([self._config.adb_path, "-s", serial, *args], timeout=timeout)
+
+    def adb_shell_read(self, serial: str, command: str, timeout: float = 30.0) -> str:
+        return _run(
+            [self._config.adb_path, "-s", serial, "shell", command],
+            timeout=timeout,
+            allow_nonzero=True,
+        )
+
+    def adb_shell_exec(self, serial: str, command: str, timeout: float = 30.0) -> None:
+        _run([self._config.adb_path, "-s", serial, "shell", command], timeout=timeout)
+
     def instance_config_path(self, index: int) -> Path:
         """File config LDPlayer của instance.
 

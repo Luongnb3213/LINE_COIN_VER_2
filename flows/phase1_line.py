@@ -246,6 +246,16 @@ def screen_has_manual_google_verification(tree: UiTree) -> bool:
     return any(marker in summary for marker in _GOOGLE_MANUAL_MARKERS)
 
 
+def _find_google_password_field(tree: UiTree) -> UiNode | None:
+    node = tree.find(_GOOGLE_EDIT_TEXT)
+    if node is None:
+        return None
+    text = " | ".join(tree.texts)
+    if "Enter your password" in text or "Show password" in text or "Welcome" in text:
+        return node
+    return None
+
+
 def _stopped(stop_event) -> bool:
     return stop_event is not None and stop_event.is_set()
 
@@ -378,7 +388,6 @@ class Phase1LineFlow:
                 self._fill_profile(email, display_name, stop_event)
                 self._set_password(email, password, stop_event)
                 self._wait_sync(email, stop_event)
-                self._advance_until_home(email, stop_event)
         except Phase1Error as exc:
             if str(exc) == _STOPPED_MESSAGE:
                 _LOG.info("[%s] Phase 1 dừng theo yêu cầu người dùng.", email)
@@ -386,8 +395,8 @@ class Phase1LineFlow:
             _LOG.error("[%s] Phase 1 THẤT BẠI: %s", email, exc)
             return Phase1Result(status="FAILED", message=str(exc))
 
-        _LOG.info("[%s] Phase 1 THÀNH CÔNG — đã ở màn chính LINE.", email)
-        return Phase1Result(status="SUCCESS", message="Đã đăng ký/đăng nhập LINE, vào được màn chính.")
+        _LOG.info("[%s] Phase 1 THÀNH CÔNG — đã đăng ký/đăng nhập LINE.", email)
+        return Phase1Result(status="SUCCESS", message="Đã đăng ký/đăng nhập LINE.")
 
     # -- bước 1: mở app, tới màn Verify your account -------------------------
 
@@ -603,6 +612,9 @@ class Phase1LineFlow:
             if _stopped(stop_event):
                 return None
             tree = controller.ui_tree(bound)
+            node = _find_google_password_field(tree)
+            if node is not None:
+                return node
             if screen_has_manual_google_verification(tree):
                 if not warned_manual:
                     _LOG.warning(
@@ -612,12 +624,6 @@ class Phase1LineFlow:
                     warned_manual = True
                 time.sleep(POLL_INTERVAL_SECONDS)
                 continue
-            node = tree.find(_GOOGLE_EDIT_TEXT)
-            text = " | ".join(tree.texts)
-            if node is not None and (
-                "Enter your password" in text or "Show password" in text or "Welcome" in text
-            ):
-                return node
             time.sleep(POLL_INTERVAL_SECONDS)
         _LOG.warning("[%s] Không thấy màn password Google sau khi nhập email.", email)
         return None

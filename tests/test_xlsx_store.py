@@ -215,7 +215,7 @@ class XlsxStoreTests(unittest.TestCase):
             self.assertIn(name, header_row)
 
         headers = {str(c.value): idx + 1 for idx, c in enumerate(ws[1])}
-        self.assertEqual(ws.cell(row=2, column=headers["google_instance_status"]).value, "SUCCESS")
+        self.assertEqual(ws.cell(row=2, column=headers["google_instance_status"]).value, "SUCCESS|LineViet-g01")
 
     def test_get_pending_accounts_reads_google_prepare_mapping(self) -> None:
         self._write_workbook(
@@ -231,6 +231,19 @@ class XlsxStoreTests(unittest.TestCase):
         self.assertEqual(account.google_prepare_status, "SUCCESS")
         self.assertEqual(account.google_prepare_message, "")
 
+    def test_get_pending_accounts_reads_google_prepare_instance_mapping(self) -> None:
+        self._write_workbook(
+            ["email", "google_instance_status"],
+            [["user@example.com", "SUCCESS|LineViet-g01"]],
+        )
+        store = XlsxStore(self.path)
+
+        account = store.get_pending_accounts()[0]
+
+        self.assertEqual(account.google_prepare_status, "SUCCESS")
+        self.assertEqual(account.google_instance, "LineViet-g01")
+        self.assertEqual(account.google_prepare_message, "")
+
     def test_get_pending_accounts_skips_success_rows(self) -> None:
         self._write_workbook(
             ["email", "display_name", "account_password", "line_status"],
@@ -244,6 +257,34 @@ class XlsxStoreTests(unittest.TestCase):
         rows = store.get_pending_accounts()
         emails = [row.email for row in rows]
         self.assertEqual(emails, ["pending@example.com", "failed@example.com"])
+
+    def test_get_runnable_accounts_keeps_line_success_when_phase2_failed(self) -> None:
+        self._write_workbook(
+            ["email", "line_status", "phase2_status", "gift_code", "gift_code_ministop"],
+            [
+                ["phase2-failed@example.com", "SUCCESS", "FAILED", "", ""],
+                ["new@example.com", "", "", "", ""],
+            ],
+        )
+        store = XlsxStore(self.path)
+
+        rows = store.get_runnable_accounts(limit=1)
+
+        self.assertEqual([row.email for row in rows], ["phase2-failed@example.com"])
+
+    def test_get_runnable_accounts_skips_only_when_line_and_phase2_codes_done(self) -> None:
+        self._write_workbook(
+            ["email", "line_status", "phase2_status", "gift_code", "gift_code_ministop"],
+            [
+                ["done@example.com", "SUCCESS", "SUCCESS", "AAA111BBB222", "CCC333DDD444"],
+                ["next@example.com", "", "", "", ""],
+            ],
+        )
+        store = XlsxStore(self.path)
+
+        rows = store.get_runnable_accounts(limit=1)
+
+        self.assertEqual([row.email for row in rows], ["next@example.com"])
 
     def test_get_pending_accounts_respects_limit(self) -> None:
         self._write_workbook(

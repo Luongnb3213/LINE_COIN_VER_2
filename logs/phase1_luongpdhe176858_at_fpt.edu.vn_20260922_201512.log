@@ -1,0 +1,30 @@
+2026-09-22 20:15:12  INFO     line_coin_ver2.phase1_test  Log file riêng cho lần chạy này: C:\Users\ADMIN\Desktop\FPT\LINE_COIN_VER_2\logs\phase1_luongpdhe176858_at_fpt.edu.vn_20260922_201512.log
+2026-09-22 20:15:12  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] display_name='choai' account_password=(từ Excel)
+2026-09-22 20:15:12  INFO     line_coin_ver2.phase1_test  Instance 1 chưa chạy, đang khởi động...
+2026-09-22 20:15:13  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Chờ Xiaowei nhận/boot instance index 1: Không tìm thấy thiết bị Xiaowei khớp với ADB serial `emulator-5556`. Danh sách Xiaowei hiện có (serial/onlySerial): (rỗng).
+2026-09-22 20:15:22  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Chờ Xiaowei nhận/boot instance index 1: Không tìm thấy thiết bị Xiaowei khớp với ADB serial `emulator-5556`. Danh sách Xiaowei hiện có (serial/onlySerial): (rỗng).
+2026-09-22 20:15:32  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Chờ Xiaowei nhận/boot instance index 1: Không tìm thấy thiết bị Xiaowei khớp với ADB serial `emulator-5556`. Danh sách Xiaowei hiện có (serial/onlySerial): (rỗng).
+2026-09-22 20:15:41  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Chờ Xiaowei nhận/boot instance index 1: Không tìm thấy thiết bị Xiaowei khớp với ADB serial `emulator-5556`. Danh sách Xiaowei hiện có (serial/onlySerial): (rỗng).
+2026-09-22 20:15:51  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Chờ Xiaowei nhận/boot instance index 1: Không tìm thấy thiết bị Xiaowei khớp với ADB serial `emulator-5556`. Danh sách Xiaowei hiện có (serial/onlySerial): (rỗng).
+2026-09-22 20:15:54  INFO     line_coin_ver2.device  Đã map: LDPlayer[1] `LineViet-g01` -> adb=emulator-5556 -> xiaowei serial=emulator-5556 onlySerial=emulator-5556 model=ROG Phone 7 Ultimate
+2026-09-22 20:15:54  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] Bắt đầu Phase 1: ldplayer_index=1 instance=LineViet-g01 adb_serial=emulator-5556 xiaowei_serial=emulator-5556
+2026-09-22 20:15:54  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] 1. Mở LINE...
+2026-09-22 20:15:58  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] App đã lên màn đăng ký.
+2026-09-22 20:16:12  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] tap(sign-up) text='Sign up' bounds=[323,1199][397,1225] target_bounds=[24,1176][696,1248] center=(360,1212)
+2026-09-22 20:16:12  INFO     line_coin_ver2.device  Tap node View [24,1176][696,1248] tại (360, 1212)
+2026-09-22 20:16:12  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] tapped(sign-up) center=(360,1212)
+2026-09-22 20:16:24  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] Đang ở màn 'Verify your account'.
+2026-09-22 20:16:24  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] 2. Đăng nhập Google...
+2026-09-22 20:16:28  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] tap(continue-with-google) text='Continue with Google' bounds=[24,1188][696,1260] target_bounds=[24,1188][696,1260] center=(360,1224)
+2026-09-22 20:16:28  INFO     line_coin_ver2.device  Tap node Button text="Continue with Google" id=google_login [24,1188][696,1260] tại (360, 1224)
+2026-09-22 20:16:29  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] tapped(continue-with-google) center=(360,1224)
+2026-09-22 20:16:29  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] Đã bấm 'Continue with Google', chờ bộ chọn tài khoản...
+2026-09-22 20:16:38  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] tap(select-google-account) text='luongpdhe176858@fpt.edu.vn' bounds=[150,725][396,752] target_bounds=[54,675][666,770] center=(273,738)
+2026-09-22 20:16:38  INFO     line_coin_ver2.device  Tap node LinearLayout id=container [54,675][666,770] tại (273, 738)
+2026-09-22 20:16:38  INFO     line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] tapped(select-google-account) center=(273,738)
+2026-09-22 20:16:54  WARNING  line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] Bộ chọn tài khoản Google không biến mất sau khi bấm `luongpdhe176858@fpt.edu.vn`.
+2026-09-22 20:16:54  ERROR    line_coin_ver2.phase1_line  [luongpdhe176858@fpt.edu.vn] Phase 1 THẤT BẠI: GOOGLE_ACCOUNT_NOT_READY: không tìm/chọn/login được tài khoản Google `luongpdhe176858@fpt.edu.vn` trên máy ảo.
+2026-09-22 20:16:54  INFO     line_coin_ver2.xlsx_store  [luongpdhe176858@fpt.edu.vn] Đã ghi Excel: line_status=FAILED error=GOOGLE_ACCOUNT_NOT_READY: không tìm/chọn/login được tài khoản Google `luongpdhe176858@fpt.edu.vn` trên máy ảo. -> C:\Users\ADMIN\Downloads\lineviet_test_3_accounts.xlsx
+2026-09-22 20:16:54  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Dọn dẹp: force-stop LINE (chỉ stop app).
+2026-09-22 20:16:54  INFO     line_coin_ver2.phase1_test  [luongpdhe176858@fpt.edu.vn] Đã force-stop LINE.
+2026-09-22 20:16:55  INFO     line_coin_ver2.phase1_test  PHASE1 TEST INCOMPLETE — email=luongpdhe176858@fpt.edu.vn status=FAILED excel_ok=True ran_phase2=False phase2_ok=True instance_removed=False

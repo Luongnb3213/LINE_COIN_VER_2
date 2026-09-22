@@ -1,0 +1,11 @@
+2026-09-22 20:43:06  INFO     line_coin_ver2.phase1_test  Log file riêng cho lần chạy này: C:\Users\ADMIN\Desktop\FPT\LINE_COIN_VER_2\logs\phase1_sky-shinier5x_at_icloud.com_20260922_204306.log
+2026-09-22 20:43:06  INFO     line_coin_ver2.phase1_test  [sky-shinier5x@icloud.com] display_name='haha' account_password=(từ Excel)
+2026-09-22 20:43:06  INFO     line_coin_ver2.device  Đã map: LDPlayer[1] `LineViet-g01` -> adb=emulator-5556 -> xiaowei serial=emulator-5556 onlySerial=emulator-5556 model=PJD110
+2026-09-22 20:43:06  INFO     line_coin_ver2.phase1_line  [sky-shinier5x@icloud.com] Bắt đầu Phase 1: ldplayer_index=1 instance=LineViet-g01 adb_serial=emulator-5556 xiaowei_serial=emulator-5556
+2026-09-22 20:43:06  INFO     line_coin_ver2.phase1_line  [sky-shinier5x@icloud.com] 1. Mở LINE...
+2026-09-22 20:43:37  INFO     line_coin_ver2.phase1_line  [sky-shinier5x@icloud.com] Phase 1 dừng theo yêu cầu người dùng.
+2026-09-22 20:43:37  INFO     line_coin_ver2.phase1_test  [sky-shinier5x@icloud.com] Đã dừng theo yêu cầu — không ghi Excel.
+2026-09-22 20:43:37  INFO     line_coin_ver2.phase1_test  [sky-shinier5x@icloud.com] Dọn dẹp: force-stop LINE (chỉ stop app).
+2026-09-22 20:43:37  INFO     line_coin_ver2.phase1_test  [sky-shinier5x@icloud.com] Đã force-stop LINE.
+2026-09-22 20:43:37  INFO     line_coin_ver2.phase1_test  [sky-shinier5x@icloud.com] Dừng theo yêu cầu — bỏ qua xoá instance dù --remove-instance có bật.
+2026-09-22 20:43:37  INFO     line_coin_ver2.phase1_test  PHASE1 TEST INCOMPLETE — email=sky-shinier5x@icloud.com status=STOPPED excel_ok=True ran_phase2=False phase2_ok=True instance_removed=False

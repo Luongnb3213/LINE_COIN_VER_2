@@ -89,8 +89,8 @@ CHROME_FIRST_RUN_TIMEOUT_SECONDS = 20.0
 AUTH_SCREEN_RETRIES = 2
 GIFT_CODE_RETRIES = 2
 AUTH_SCREEN_TIMEOUT_SECONDS = 20.0
-FIRST_DEEPLINK_TIMEOUT_SECONDS = 10.0
-DEEPLINK_TIMEOUT_SECONDS = 60.0
+FIRST_DEEPLINK_TIMEOUT_SECONDS = 45.0
+DEEPLINK_TIMEOUT_SECONDS = 90.0
 DEEPLINK_POLL_SECONDS = 2.0
 POLL_INTERVAL_SECONDS = 1.0
 
@@ -256,13 +256,16 @@ def _find_any_text(tree: UiTree, texts: tuple[str, ...]) -> UiNode | None:
 
 def _find_ministop_line_button(tree: UiTree) -> UiNode | None:
     node = tree.find(Selector(text_contains=MINISTOP_LINE_BUTTON_TEXT))
-    if node is not None and node.clickable_self_or_ancestor() is not None:
+    if node is not None:
         return node
+    for partial in ("LINE認証", "友だち追加"):
+        node = tree.find(Selector(text_contains=partial))
+        if node is not None:
+            return node
     for candidate in tree.nodes:
         haystack = f"{normalise(candidate.text)} {normalise(candidate.content_desc)}"
         if "line認証" in haystack and "友だち追加" in haystack:
-            if candidate.clickable_self_or_ancestor() is not None:
-                return candidate
+            return candidate
     return None
 
 
@@ -279,7 +282,14 @@ def _tap_point(matched: UiNode, target: UiNode) -> tuple[int, int]:
 def _tap_logged(controller: DeviceController, bound: BoundDevice, email: str, kind: str, node: UiNode) -> None:
     target = node.clickable_self_or_ancestor()
     if target is None:
-        raise Phase2Error(f"Node `{node.describe()}` ({kind}) không bấm được và không có tổ tiên bấm được.")
+        x, y = node.bounds.center
+        _LOG.warning(
+            "[%s] Node `%s` (%s) không có clickable ancestor; fallback tap tâm node=(%s,%s).",
+            email, node.describe(), kind, x, y,
+        )
+        controller.tap_bounds(bound, x, y)
+        _LOG.info("[%s] tapped(%s) center=(%s,%s) fallback", email, kind, x, y)
+        return
     x, y = _tap_point(node, target)
     _LOG.info(
         "[%s] tap(%s) text=%r bounds=%s target_bounds=%s center=(%s,%s)",
@@ -400,6 +410,17 @@ def _find_with_scroll(
     return None
 
 
+def _scroll_down_gently(controller: DeviceController, bound: BoundDevice, tree: UiTree) -> None:
+    screen = tree.screen
+    if screen.visible:
+        x = (screen.left + screen.right) // 2
+        top = screen.top + int(screen.height * 0.62)
+        bottom = screen.top + int(screen.height * 0.38)
+    else:
+        x, top, bottom = 500, 1200, 800
+    controller.swipe(bound, x, top, x, bottom, 260)
+
+
 def _find_ministop_line_button_with_scroll(
     controller: DeviceController, bound: BoundDevice, email: str, source: str
 ) -> UiNode | None:
@@ -408,7 +429,7 @@ def _find_ministop_line_button_with_scroll(
     if node is not None:
         return node
     for scroll_count in range(1, MINISTOP_BUTTON_MAX_SCROLLS + 1):
-        controller.scroll_down(bound, tree)
+        _scroll_down_gently(controller, bound, tree)
         time.sleep(POLL_INTERVAL_SECONDS)
         tree = controller.ui_tree(bound)
         node = _find_ministop_line_button(tree)
@@ -509,7 +530,9 @@ class Phase2Flow:
             try:
                 _open_url_until_page(self._controller, self._bound, email, url, source, markers)
                 self._prepare_campaign_page(email, source)
-                self._wait_for_authorization(email, source)
+                early_code = self._wait_for_authorization(email, source)
+                if early_code:
+                    return early_code
                 break
             except Phase2Error as exc:
                 last_error = exc
@@ -517,15 +540,19 @@ class Phase2Flow:
                     "[%s][%s] bước xác thực lần %s/%s thất bại: %s",
                     email, source, attempt, AUTH_SCREEN_RETRIES, exc,
                 )
+                if attempt < AUTH_SCREEN_RETRIES:
+                    self._close_line_webview_for_retry(email, source)
+                    time.sleep(1.0)
         else:
             raise Phase2Error(f"Không qua được bước xác thực sau {AUTH_SCREEN_RETRIES} lần: {last_error}")
 
         return self._run_gift_stage(email, source)
 
-    def _wait_for_authorization(self, email: str, source: str) -> None:
+    def _wait_for_authorization(self, email: str, source: str) -> str:
         controller, bound = self._controller, self._bound
         deadline = time.monotonic() + AUTH_SCREEN_TIMEOUT_SECONDS
         ministop_fallback_tapped = False
+        gift_scrolls = 0
 
         while time.monotonic() < deadline:
             tree = controller.ui_tree(bound)
@@ -536,15 +563,28 @@ class Phase2Flow:
             #: (màn hình xác nhận AirWALLET) không đủ điều kiện return vì nút
             #: allow trên đó có thể chưa kịp render/bấm được.
             if screen in (Phase2Screen.GIFT_CODE_PAGE, Phase2Screen.GIFT_CODE_READY):
-                return
+                code = _extract_gift_code(tree, allow_label_only=True, log_context=f"[{email}][{source}] ")
+                if code:
+                    _LOG.info("[%s][%s] auth stage lấy được gift code sớm: %s", email, source, code)
+                    return code
+                if gift_scrolls < GIFT_CODE_MAX_SCROLLS:
+                    gift_scrolls += 1
+                    _LOG.info(
+                        "[%s][%s] auth stage ở trang gift code nhưng chưa thấy mã, scroll %s/%s.",
+                        email, source, gift_scrolls, GIFT_CODE_MAX_SCROLLS,
+                    )
+                    controller.scroll_down(bound, tree)
+                    time.sleep(POLL_INTERVAL_SECONDS)
+                    continue
+                return ""
 
             if screen in (Phase2Screen.AUTH_ALLOW, Phase2Screen.AUTH_SCREEN):
                 node = _find_any_text(tree, AUTH_ALLOW_TEXTS)
                 if node is not None:
                     _LOG.info("[%s][%s] auth screen: allow found, bấm.", email, source)
                     _tap_logged(controller, bound, email, "auth-allow", node)
-                    time.sleep(POLL_INTERVAL_SECONDS)
-                    continue
+                    time.sleep(4.0)
+                    return ""
                 _LOG.info("[%s][%s] auth screen waiting: allow not found, tiếp tục chờ.", email, source)
 
             if source == "ministop" and screen == Phase2Screen.MINISTOP_CAMPAIGN_PAGE and not ministop_fallback_tapped:
@@ -572,14 +612,23 @@ class Phase2Flow:
                 _LOG.warning(
                     "[%s][%s] LINE webview trống ở lần %s (%s).", email, source, attempt_no, exc,
                 )
-                if attempt_no < len(attempts):
-                    _LOG.info("[%s][%s] Quay lại Chrome, thử lại từ đầu.", email, source)
-                    controller.stop_app(bound, LINE_PACKAGE)
-                    _open_url_until_page(controller, bound, email, url, source, markers)
-                    self._prepare_campaign_page(email, source)
-                    self._wait_for_authorization(email, source)
+            if attempt_no < len(attempts):
+                _LOG.info("[%s][%s] Quay lại Chrome, thử lại từ đầu.", email, source)
+                self._close_line_webview_for_retry(email, source)
+                _open_url_until_page(controller, bound, email, url, source, markers)
+                self._prepare_campaign_page(email, source)
+                early_code = self._wait_for_authorization(email, source)
+                if early_code:
+                    return early_code
 
         raise Phase2Error(f"Không lấy được gift code {source} sau {len(attempts)} lần: {last_error}")
+
+    def _close_line_webview_for_retry(self, email: str, source: str) -> None:
+        try:
+            self._controller.stop_app(self._bound, LINE_PACKAGE)
+            _LOG.info("[%s][%s] retry close LINE webview package=%s clear_data=false", email, source, LINE_PACKAGE)
+        except Exception as exc:  # noqa: BLE001 - retry cleanup is best-effort
+            _LOG.warning("[%s][%s] retry close LINE webview failed: %s", email, source, exc)
 
     def _wait_for_gift_code(self, email: str, source: str, attempt_no: int, timeout: float) -> str:
         controller, bound = self._controller, self._bound
