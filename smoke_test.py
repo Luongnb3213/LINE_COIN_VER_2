@@ -156,22 +156,7 @@ def _run_smoke_test(
         _LOG.info("Dừng theo yêu cầu trước khi khởi động thiết bị.")
         return 1
 
-    # 2. Boot nếu cần, lấy serial ADB.
-    try:
-        if not ldplayer.is_running(resolved_index):
-            _LOG.info("Instance %s chưa chạy, đang khởi động...", resolved_index)
-            ldplayer.start_instance(resolved_index)
-        adb_serial = ldplayer.adb_serial(resolved_index)
-    except LDPlayerError as exc:
-        _LOG.error("Không khởi động được instance %s: %s", resolved_index, exc)
-        return 1
-    _LOG.info("Instance %s có serial ADB (suy ra theo công thức): %s", resolved_index, adb_serial)
-
-    if _stopped(stop_event):
-        _LOG.info("Dừng theo yêu cầu trước khi map thiết bị Xiaowei.")
-        return 1
-
-    # 3. List thiết bị Xiaowei.
+    # 2. Boot nếu cần, rồi chờ Xiaowei map đúng serial và Android boot xong.
     transport = WebSocketTransport(
         settings.xiaowei.ws_url,
         connect_timeout=settings.xiaowei.connect_timeout,
@@ -183,6 +168,31 @@ def _run_smoke_test(
         retry_backoff=settings.xiaowei.retry_backoff,
         screenshot_dir=settings.xiaowei.screenshot_dir,
     )
+    controller = DeviceController(ldplayer, xiaowei)
+    try:
+        if not ldplayer.is_running(resolved_index):
+            _LOG.info("Instance %s chưa chạy, đang khởi động...", resolved_index)
+            ldplayer.start_instance(resolved_index)
+        bound = controller.wait_for_boot_by_index(
+            resolved_index,
+            timeout=settings.ldplayer.boot_timeout,
+            stop_event=stop_event,
+            log=lambda message: _LOG.info("%s", message),
+        )
+        adb_serial = bound.adb_serial
+    except LDPlayerError as exc:
+        _LOG.error("Không khởi động được instance %s: %s", resolved_index, exc)
+        return 1
+    except DeviceControllerError as exc:
+        _LOG.error("DỪNG AN TOÀN — không map được thiết bị: %s", exc)
+        return 1
+    _LOG.info("Instance %s có serial ADB (suy ra theo công thức): %s", resolved_index, adb_serial)
+
+    if _stopped(stop_event):
+        _LOG.info("Dừng theo yêu cầu trước khi thao tác thiết bị Xiaowei.")
+        return 1
+
+    # 3. List thiết bị Xiaowei.
     try:
         devices = xiaowei.list_devices()
     except Exception as exc:  # noqa: BLE001 - log rồi dừng, không đoán tiếp
@@ -200,14 +210,7 @@ def _run_smoke_test(
             device.model or "-",
         )
 
-    # 4. Map an toàn: dừng ngay nếu không khớp chính xác.
-    controller = DeviceController(ldplayer, xiaowei)
-    try:
-        bound = controller.bind_by_index(resolved_index)
-    except DeviceControllerError as exc:
-        _LOG.error("DỪNG AN TOÀN — không map được thiết bị: %s", exc)
-        return 1
-
+    # 4. Map an toàn đã được xác nhận trong lúc chờ boot.
     if _stopped(stop_event):
         _LOG.info("[%s] Dừng theo yêu cầu ngay sau khi bind — bỏ qua thao tác UI.", bound.instance_name)
         return 1

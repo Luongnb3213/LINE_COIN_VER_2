@@ -33,6 +33,7 @@ _LOG = get_logger("xlsx_store")
 
 PHASE2_HEADERS = ("gift_code", "gift_code_ministop", "phase2_status", "phase2_message", "phase2_updated_at")
 LINE_HEADERS = ("line_status", "error_details")
+GOOGLE_PREPARE_HEADERS = ("google_instance_status",)
 _EMAIL_HEADER = "email"
 _EMAIL_PASSWORD_HEADER = "email_password"
 _DISPLAY_NAME_HEADERS = ("display_name", "name")
@@ -58,6 +59,19 @@ class AccountRow:
     gift_code: str
     gift_code_ministop: str
     phase2_status: str
+    google_instance_status: str
+
+    @property
+    def google_prepare_status(self) -> str:
+        return self.google_instance_status.split("|", 1)[0].strip()
+
+    @property
+    def google_instance(self) -> str:
+        return ""
+
+    @property
+    def google_prepare_message(self) -> str:
+        return ""
 
 
 class XlsxStoreError(RuntimeError):
@@ -168,6 +182,7 @@ class XlsxStore:
             "gift_code": headers.get("gift_code"),
             "gift_code_ministop": headers.get("gift_code_ministop"),
             "phase2_status": headers.get("phase2_status"),
+            "google_instance_status": headers.get("google_instance_status"),
         }
 
     @staticmethod
@@ -189,6 +204,7 @@ class XlsxStore:
             gift_code=_cell(cols["gift_code"]),
             gift_code_ministop=_cell(cols["gift_code_ministop"]),
             phase2_status=_cell(cols["phase2_status"]),
+            google_instance_status=_cell(cols["google_instance_status"]),
         )
 
     def get_pending_accounts(self, limit: int = 0) -> list[AccountRow]:
@@ -289,6 +305,46 @@ class XlsxStore:
         self._atomic_save(wb)
         _LOG.info("[%s] Đã ghi Excel: line_status=FAILED error=%s -> %s", email, error, self._path)
 
+    def update_google_prepare_success(self, email: str, instance_name: str) -> None:
+        """Ghi trạng thái Google đã chuẩn bị xong."""
+        self._update_google_prepare(
+            email,
+            instance_name=instance_name,
+            status="SUCCESS",
+            message="",
+        )
+
+    def update_google_prepare_failed(self, email: str, instance_name: str, message: str) -> None:
+        """Ghi trạng thái chuẩn bị Google thất bại."""
+        self._update_google_prepare(
+            email,
+            instance_name=instance_name,
+            status="FAILED",
+            message="",
+        )
+
+    def _update_google_prepare(self, email: str, *, instance_name: str, status: str, message: str) -> None:
+        wb = self._load()
+        ws = self._sheet(wb)
+        headers = self._header_map(ws)
+        self._ensure_headers(ws, headers, GOOGLE_PREPARE_HEADERS)
+
+        email_col = headers.get(_EMAIL_HEADER)
+        if email_col is None:
+            raise XlsxStoreError(f"Sheet `{self._sheet_name}` thiếu cột `{_EMAIL_HEADER}`.")
+        row_idx = self._find_row(ws, email_col, email)
+        if row_idx is None:
+            raise XlsxStoreError(f"Không tìm thấy dòng nào khớp email `{email}` trong `{self._path}`.")
+
+        del instance_name, message
+        ws.cell(row=row_idx, column=headers["google_instance_status"], value=status)
+
+        self._atomic_save(wb)
+        _LOG.info(
+            "[%s] Đã ghi Excel: google_instance_status=%s -> %s",
+            email, status, self._path,
+        )
+
     def update_phase2(
         self,
         email: str,
@@ -356,4 +412,11 @@ class XlsxStore:
             ) from exc
 
 
-__all__ = ["AccountRow", "LINE_HEADERS", "PHASE2_HEADERS", "XlsxStore", "XlsxStoreError"]
+__all__ = [
+    "AccountRow",
+    "GOOGLE_PREPARE_HEADERS",
+    "LINE_HEADERS",
+    "PHASE2_HEADERS",
+    "XlsxStore",
+    "XlsxStoreError",
+]

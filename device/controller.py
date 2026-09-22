@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass
+from typing import Callable
 
 from core.logging_utils import get_logger
 from device.mapping import require_xiaowei_device
@@ -110,6 +111,48 @@ class DeviceController:
             xiaowei_device.model or "-",
         )
         return bound
+
+    def wait_for_boot_by_index(
+        self,
+        index: int,
+        *,
+        timeout: float = 180.0,
+        poll_seconds: float = 3.0,
+        stop_event=None,
+        log: Callable[[str], None] | None = None,
+    ) -> BoundDevice:
+        """Chờ Xiaowei thấy đúng instance và Android báo boot xong.
+
+        Không gọi `adb.exe` trực tiếp ở đây; toàn bộ readiness đi qua Xiaowei để
+        tránh tranh ADB server với chính Xiaowei.
+        """
+        deadline = time.monotonic() + timeout
+        last_error = ""
+        last_log_at = 0.0
+        adb_serial = self._ldplayer.adb_serial(index)
+
+        while time.monotonic() < deadline:
+            if stop_event is not None and stop_event.is_set():
+                raise DeviceControllerError("STOPPED")
+            try:
+                bound = self.bind_by_index(index)
+                boot_completed = self.shell_read(bound, "getprop sys.boot_completed").strip()
+                if boot_completed == "1":
+                    return bound
+                last_error = f"Xiaowei đã thấy {adb_serial}, boot_completed={boot_completed or '<empty>'}"
+            except Exception as exc:  # noqa: BLE001 - Xiaowei/Android có thể chưa sẵn sàng lúc boot
+                last_error = str(exc)
+
+            now = time.monotonic()
+            if log is not None and now - last_log_at >= 9.0:
+                log(f"Chờ Xiaowei nhận/boot instance index {index}: {last_error}")
+                last_log_at = now
+            time.sleep(min(poll_seconds, max(0.0, deadline - time.monotonic())))
+
+        raise DeviceControllerError(
+            f"XIAOWEI_BOOT_TIMEOUT: instance index {index} ({adb_serial}) chưa sẵn sàng "
+            f"sau {timeout:g}s: {last_error}"
+        )
 
     # -- UI tree ---------------------------------------------------------
 

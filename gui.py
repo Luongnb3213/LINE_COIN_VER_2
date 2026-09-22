@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import queue
 import threading
@@ -15,7 +16,7 @@ except Exception:  # pragma: no cover
     openpyxl = None
 
 from flows.phase2 import CHROME_PACKAGE, LINE_PACKAGE
-from flows.google_prepare import GoogleCredential, prepare_google_instance
+from flows.google_prepare import GoogleCredential, next_prepare_names, prepare_google_instance
 from flows.xlsx_store import XlsxStore, XlsxStoreError
 from device.controller import DeviceController
 from ldplayer.adapter import LDPlayerAdapter, LDPlayerConfig
@@ -238,7 +239,8 @@ class Phase2GUI(tk.Tk):
         ws = wb.active
         ws.title = "Mails"
         ws.append(["email", "email_password", "display_name", "account_password", "status", "error_details",
-                   "gift_code", "gift_code_ministop", "phase2_status", "phase2_message", "phase2_updated_at"])
+                   "google_instance_status", "gift_code", "gift_code_ministop", "phase2_status",
+                   "phase2_message", "phase2_updated_at"])
         wb.save(path)
         self.vars["xlsx_path"].set(path)
         messagebox.showinfo("LineViet", f"Đã tạo {path}")
@@ -284,17 +286,28 @@ class Phase2GUI(tk.Tk):
         try:
             self.google_tree.delete(*self.google_tree.get_children())
             rows = self._ldplayer_adapter().list_instances()
+            prepared = self._google_prepare_by_instance()
             for row in rows:
+                account = prepared.get(row.name)
                 self.google_tree.insert(
                     "",
                     "end",
                     iid=str(row.index),
-                    values=(row.index, row.name, "running" if row.running else "stopped", "", ""),
+                    values=(
+                        row.index,
+                        row.name,
+                        "running" if row.running else "stopped",
+                        account.google_prepare_status if account else "",
+                        account.email if account else "",
+                    ),
                 )
             running = sum(1 for row in rows if row.running)
             self.google_status.configure(text=f"instance: tổng {len(rows)} | đang chạy {running}")
         except Exception as exc:
             self.google_status.configure(text=f"không đọc được instance: {exc}")
+
+    def _google_prepare_by_instance(self):
+        return {}
 
     def _on_instance_selected(self, _event=None):
         selected = self.google_tree.selection()
@@ -396,13 +409,21 @@ class Phase2GUI(tk.Tk):
             raise XlsxStoreError("Chưa chọn file Excel.")
         active_sheet = str(self.config_data.get("active_sheet") or "Mails")
         limit = max(1, int(self.vars["google_prepare_count"].get() or 1))
-        accounts = XlsxStore(xlsx_path, active_sheet).get_pending_accounts(limit=limit)
+        store = XlsxStore(xlsx_path, active_sheet)
+        accounts = store.get_pending_accounts(limit=0)
+
         credentials: list[GoogleCredential] = []
         for account in accounts:
             if not account.email or not account.email_password:
                 self.log_queue.put(f"Bỏ qua {account.email or '(trống)'}: thiếu email/email_password.")
                 continue
+            prepared_ok = account.google_prepare_status.strip().upper() == "SUCCESS"
+            if prepared_ok:
+                self.log_queue.put(f"Bỏ qua {account.email}: google_instance_status=SUCCESS.")
+                continue
             credentials.append(GoogleCredential(email=account.email, password=account.email_password))
+            if len(credentials) >= limit:
+                break
         return credentials
 
     def start_prepare_google(self):
@@ -436,33 +457,87 @@ class Phase2GUI(tk.Tk):
     def _run_prepare_google(self, template_name: str, credentials: list[GoogleCredential], stop_event: threading.Event):
         code = 0
         try:
-            ldplayer = self._ldplayer_adapter()
-            controller = DeviceController(ldplayer, self._xiaowei_client())
             prefix = str(self.config_data.get("template_prefix") or "LineViet-g")
-            for offset, credential in enumerate(credentials, start=1):
+            names = next_prepare_names(self._ldplayer_adapter(), prefix, len(credentials))
+            parallel = min(
+                len(credentials),
+                max(1, int(self.vars["google_prepare_parallel"].get() or 1)),
+            )
+            jobs = list(enumerate(zip(credentials, names), start=1))
+            self.log_queue.put(
+                f"Chuẩn bị Google: {len(credentials)} account, chạy song song tối đa {parallel} máy."
+            )
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
+                futures = {}
+                for offset, (credential, new_name) in jobs:
+                    if stop_event.is_set():
+                        self.log_queue.put("Dừng chuẩn bị Google theo yêu cầu.")
+                        code = 1
+                        break
+                    self.log_queue.put(
+                        f"Chuẩn bị Google {offset}/{len(credentials)}: {credential.email} -> {new_name}"
+                    )
+                    future = executor.submit(
+                        self._prepare_google_one,
+                        template_name,
+                        credential,
+                        prefix,
+                        new_name,
+                        stop_event,
+                    )
+                    futures[future] = (credential, new_name)
+
+                for future in concurrent.futures.as_completed(futures):
+                    credential, new_name = futures[future]
+                    try:
+                        prepared = future.result()
+                        self._xlsx_store().update_google_prepare_success(credential.email, prepared.name)
+                        self.log_queue.put(
+                            f"Chuẩn bị Google xong cho {credential.email}: {prepared.name} (index {prepared.index})"
+                        )
+                    except Exception as exc:
+                        code = 1
+                        try:
+                            self._xlsx_store().update_google_prepare_failed(credential.email, new_name, str(exc))
+                        except Exception as write_exc:
+                            self.log_queue.put(f"Ghi Excel lỗi cho {credential.email}: {write_exc}")
+                        self.log_queue.put(f"Chuẩn bị Google lỗi cho {credential.email} ({new_name}): {exc}")
                 if stop_event.is_set():
                     self.log_queue.put("Dừng chuẩn bị Google theo yêu cầu.")
                     code = 1
-                    break
-                self.log_queue.put(f"Chuẩn bị Google {offset}/{len(credentials)}: {credential.email}")
-                try:
-                    prepare_google_instance(
-                        ldplayer=ldplayer,
-                        controller=controller,
-                        template_name=template_name,
-                        credential=credential,
-                        prefix=prefix,
-                        stop_event=stop_event,
-                        log=self.log_queue.put,
-                    )
-                except Exception as exc:
-                    code = 1
-                    self.log_queue.put(f"Chuẩn bị Google lỗi cho {credential.email}: {exc}")
             self.log_queue.put("Chuẩn bị Google xong.")
         except Exception as exc:
             code = 1
             self.log_queue.put(f"Chuẩn bị Google lỗi: {exc}")
         self.after(0, lambda: self._finish_run(code))
+
+    def _xlsx_store(self) -> XlsxStore:
+        return XlsxStore(
+            str(self.vars["xlsx_path"].get()).strip(),
+            str(self.config_data.get("active_sheet") or "Mails"),
+        )
+
+    def _prepare_google_one(
+        self,
+        template_name: str,
+        credential: GoogleCredential,
+        prefix: str,
+        new_name: str,
+        stop_event: threading.Event,
+    ):
+        ldplayer = self._ldplayer_adapter()
+        controller = DeviceController(ldplayer, self._xiaowei_client())
+        return prepare_google_instance(
+            ldplayer=ldplayer,
+            controller=controller,
+            template_name=template_name,
+            credential=credential,
+            prefix=prefix,
+            new_name=new_name,
+            stop_event=stop_event,
+            log=self.log_queue.put,
+        )
 
     def _resolve_target(self):
         index_raw = str(self.vars["instance_index"].get()).strip()

@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from core.logging_utils import get_logger
-from device.controller import BoundDevice, DeviceController, DeviceControllerError
+from device.controller import BoundDevice, DeviceController
 from device.ui_tree import Selector, UiNode, UiTree
 from ldplayer.adapter import LDPlayerAdapter
 
@@ -61,15 +61,24 @@ class PreparedGoogleInstance:
 
 
 def next_prepare_name(ldplayer: LDPlayerAdapter, prefix: str) -> str:
+    return next_prepare_names(ldplayer, prefix, 1)[0]
+
+
+def next_prepare_names(ldplayer: LDPlayerAdapter, prefix: str, count: int) -> list[str]:
     used: set[int] = set()
     for instance in ldplayer.list_instances():
         name = instance.name
         if name.startswith(prefix) and name[len(prefix):].isdigit():
             used.add(int(name[len(prefix):]))
+    names: list[str] = []
     number = 1
-    while number in used:
+    while len(names) < count:
+        while number in used:
+            number += 1
+        names.append(f"{prefix}{number:02d}")
+        used.add(number)
         number += 1
-    return f"{prefix}{number:02d}"
+    return names
 
 
 def prepare_google_instance(
@@ -79,6 +88,7 @@ def prepare_google_instance(
     template_name: str,
     credential: GoogleCredential,
     prefix: str = "LineViet-g",
+    new_name: str | None = None,
     stop_event=None,
     log: Callable[[str], None] | None = None,
 ) -> PreparedGoogleInstance:
@@ -86,13 +96,18 @@ def prepare_google_instance(
     if _stopped(stop_event):
         raise RuntimeError("STOPPED")
     template_index = ldplayer.index_of(template_name)
-    new_name = next_prepare_name(ldplayer, prefix)
+    new_name = new_name or next_prepare_name(ldplayer, prefix)
     _emit(log, f"Nhân bản {template_name} -> {new_name} cho {credential.email}...")
     index = ldplayer.clone_instance(template_index, new_name)
     try:
         _emit(log, f"Bật {new_name} (index {index})...")
         ldplayer.start_instance(index)
-        bound = _bind_with_retry(controller, index, stop_event=stop_event, log=log)
+        bound = controller.wait_for_boot_by_index(
+            index,
+            timeout=ldplayer.boot_timeout,
+            stop_event=stop_event,
+            log=log,
+        )
         _open_add_google_account(controller, bound, credential.email)
         _login_google(controller, bound, credential, stop_event=stop_event, log=log)
         _emit(log, f"Google template sẵn sàng: {new_name} ({credential.email})")
@@ -116,28 +131,6 @@ def _open_add_google_account(controller: DeviceController, bound: BoundDevice, e
     if google is not None:
         _tap_logged(controller, bound, email, "google-account-type", google)
         time.sleep(4.0)
-
-
-def _bind_with_retry(
-    controller: DeviceController,
-    index: int,
-    *,
-    stop_event,
-    log: Callable[[str], None] | None,
-    timeout: float = 45.0,
-) -> BoundDevice:
-    deadline = time.monotonic() + timeout
-    last_error = ""
-    while time.monotonic() < deadline:
-        if _stopped(stop_event):
-            raise RuntimeError("STOPPED")
-        try:
-            return controller.bind_by_index(index)
-        except DeviceControllerError as exc:
-            last_error = str(exc)
-            _emit(log, f"Chờ Xiaowei nhận instance index {index}: {last_error}")
-            time.sleep(3.0)
-    raise RuntimeError(f"XIAOWEI_BIND_TIMEOUT: không map được instance index {index}: {last_error}")
 
 
 def _login_google(
@@ -295,5 +288,6 @@ __all__ = [
     "GoogleCredential",
     "PreparedGoogleInstance",
     "next_prepare_name",
+    "next_prepare_names",
     "prepare_google_instance",
 ]

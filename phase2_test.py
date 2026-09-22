@@ -254,18 +254,6 @@ def _run_phase2(
         resolved_index = instances[0].index
         _LOG.info("Không chỉ định index/name, dùng instance đầu tiên: index=%s", resolved_index)
 
-    try:
-        if not ldplayer.is_running(resolved_index):
-            _LOG.info("Instance %s chưa chạy, đang khởi động...", resolved_index)
-            ldplayer.start_instance(resolved_index)
-    except LDPlayerError as exc:
-        _LOG.error("Không khởi động được instance %s: %s", resolved_index, exc)
-        return 1
-
-    if _stopped(stop_event):
-        _LOG.info("[%s] Dừng theo yêu cầu trước khi bind thiết bị.", email)
-        return 1
-
     transport = WebSocketTransport(
         settings.xiaowei.ws_url,
         connect_timeout=settings.xiaowei.connect_timeout,
@@ -280,7 +268,18 @@ def _run_phase2(
 
     controller = DeviceController(ldplayer, xiaowei)
     try:
-        bound = controller.bind_by_index(resolved_index)
+        if not ldplayer.is_running(resolved_index):
+            _LOG.info("Instance %s chưa chạy, đang khởi động...", resolved_index)
+            ldplayer.start_instance(resolved_index)
+        bound = controller.wait_for_boot_by_index(
+            resolved_index,
+            timeout=settings.ldplayer.boot_timeout,
+            stop_event=stop_event,
+            log=lambda message: _LOG.info("[%s] %s", email, message),
+        )
+    except LDPlayerError as exc:
+        _LOG.error("Không khởi động được instance %s: %s", resolved_index, exc)
+        return 1
     except DeviceControllerError as exc:
         _LOG.error("DỪNG AN TOÀN — không map được thiết bị: %s", exc)
         return 1

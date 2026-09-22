@@ -1,8 +1,8 @@
 """Adapter vòng đời LDPlayer: list/create/clone/start/stop/remove instance.
 
-Package này CHỈ nói chuyện với `ldconsole.exe` (quản lý instance) và
-`adb.exe` (chờ device lên, đọc boot_completed). Nó không biết gì về UI bên
-trong máy ảo — việc đó thuộc `xiaowei`.
+Package này CHỈ nói chuyện với `ldconsole.exe` và file config LDPlayer. Nó
+không chờ boot bằng `adb.exe`, vì Xiaowei cũng quản lý kết nối ADB và sẽ chịu
+trách nhiệm xác nhận máy đã sẵn sàng.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ _CREATE_NO_WINDOW = 0x08000000
 
 
 class LDPlayerError(RuntimeError):
-    """Lệnh `ldconsole`/`adb` thất bại hoặc timeout."""
+    """Lệnh `ldconsole` thất bại hoặc timeout."""
 
 
 @dataclass(frozen=True)
@@ -69,7 +69,7 @@ def _run(
 
 
 class LDPlayerAdapter:
-    """Bọc `ldconsole.exe` + `adb.exe` theo config."""
+    """Bọc `ldconsole.exe` theo config."""
 
     def __init__(self, config: LDPlayerConfig) -> None:
         self._config = config
@@ -85,9 +85,6 @@ class LDPlayerAdapter:
             timeout=timeout,
             allow_nonzero=allow_nonzero,
         )
-
-    def _adb(self, *args: str, timeout: float = 30.0) -> str:
-        return _run([self._config.adb_path, *args], timeout=timeout)
 
     # -- instance queries ------------------------------------------------
 
@@ -134,6 +131,10 @@ class LDPlayerAdapter:
         trước khi tin tưởng dùng nó để map thiết bị.
         """
         return f"emulator-{5554 + index * 2}"
+
+    @property
+    def boot_timeout(self) -> int:
+        return self._config.boot_timeout
 
     def instance_config_path(self, index: int) -> Path:
         """File config LDPlayer của instance.
@@ -207,14 +208,18 @@ class LDPlayerAdapter:
         )
 
     def start_instance(self, index: int, timeout: float | None = None) -> str:
+        """Launch instance và trả serial ADB suy ra, không tự poll ADB.
+
+        `timeout` được giữ để caller cũ không vỡ chữ ký hàm; readiness sẽ do
+        `DeviceController.wait_for_boot_by_index()` xác nhận qua Xiaowei.
+        """
+        del timeout
         if self.ensure_adb_enabled(index) and self.is_running(index):
             _LOG.info("Instance %s đang chạy với ADB tắt; tắt để áp cấu hình mới.", index)
             self.stop_instance(index)
             time.sleep(5)
         self._ldconsole("launch", "--index", str(index))
-        serial = self.adb_serial(index)
-        self._wait_boot(serial, index, timeout or self._config.boot_timeout)
-        return serial
+        return self.adb_serial(index)
 
     def stop_instance(self, index: int) -> None:
         self._ldconsole("quit", "--index", str(index))
@@ -230,34 +235,5 @@ class LDPlayerAdapter:
         except LDPlayerError:
             _LOG.error("Xoá instance %s thất bại.", index)
             raise
-
-    # -- waiting -------------------------------------------------------------
-
-    def _wait_device_listed(self, serial: str, retries: int = 1) -> bool:
-        for _ in range(retries):
-            output = self._adb("devices")
-            for line in output.splitlines()[1:]:
-                parts = line.split()
-                if len(parts) >= 2 and parts[0] == serial and parts[1] == "device":
-                    return True
-            time.sleep(2)
-        return False
-
-    def _wait_boot(self, serial: str, index: int, timeout: float) -> None:
-        deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
-            try:
-                if not self._wait_device_listed(serial, retries=1):
-                    time.sleep(3)
-                    continue
-                output = self._adb("-s", serial, "shell", "getprop", "sys.boot_completed", timeout=10)
-                if output.strip() == "1":
-                    self._adb("-s", serial, "shell", "pm", "list", "packages", "-3", timeout=30)
-                    return
-            except LDPlayerError:
-                pass
-            time.sleep(3)
-        raise LDPlayerError(f"Instance {index} ({serial}) không boot xong sau {timeout:g}s.")
-
 
 __all__ = ["LDInstance", "LDPlayerAdapter", "LDPlayerConfig", "LDPlayerError"]

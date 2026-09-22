@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import openpyxl
 
-from flows.xlsx_store import PHASE2_HEADERS, XlsxStore, XlsxStoreError
+from flows.xlsx_store import GOOGLE_PREPARE_HEADERS, PHASE2_HEADERS, XlsxStore, XlsxStoreError
 
 
 class XlsxStoreTests(unittest.TestCase):
@@ -201,6 +201,35 @@ class XlsxStoreTests(unittest.TestCase):
         headers = {str(c.value): idx + 1 for idx, c in enumerate(ws[1])}
         self.assertEqual(ws.cell(row=2, column=headers["gift_code"]).value, "GRM29G7WLBMZVL3C")
         self.assertEqual(ws.cell(row=2, column=headers["phase2_status"]).value, "SUCCESS")
+
+    def test_update_google_prepare_success_auto_creates_mapping_columns(self) -> None:
+        self._write_workbook(["email"], [["user@example.com"]])
+        store = XlsxStore(self.path)
+
+        store.update_google_prepare_success("user@example.com", "LineViet-g01")
+
+        wb = openpyxl.load_workbook(self.path)
+        ws = wb["Mails"]
+        header_row = [cell.value for cell in ws[1]]
+        for name in GOOGLE_PREPARE_HEADERS:
+            self.assertIn(name, header_row)
+
+        headers = {str(c.value): idx + 1 for idx, c in enumerate(ws[1])}
+        self.assertEqual(ws.cell(row=2, column=headers["google_instance_status"]).value, "SUCCESS")
+
+    def test_get_pending_accounts_reads_google_prepare_mapping(self) -> None:
+        self._write_workbook(
+            ["email", "google_instance_status"],
+            [["user@example.com", "SUCCESS"]],
+        )
+        store = XlsxStore(self.path)
+
+        account = store.get_pending_accounts()[0]
+
+        self.assertEqual(account.google_instance_status, "SUCCESS")
+        self.assertEqual(account.google_instance, "")
+        self.assertEqual(account.google_prepare_status, "SUCCESS")
+        self.assertEqual(account.google_prepare_message, "")
 
     def test_get_pending_accounts_skips_success_rows(self) -> None:
         self._write_workbook(
