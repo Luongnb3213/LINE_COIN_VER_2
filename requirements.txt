@@ -1,0 +1,8 @@
+# LINE_COIN_VER_2
+
+# Phase 1 (LDPlayer + Xiaowei) không cần thư viện bên ngoài nào:
+# socket/ssl (WebSocket transport tự viết), json, subprocess (ldconsole/adb),
+# xml.etree.ElementTree (parse uiautomator dump), dataclasses, unittest.
+
+# Phase 2 (ghi gift code vào Excel) cần:
+openpyxl>=3.1

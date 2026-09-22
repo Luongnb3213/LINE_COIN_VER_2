@@ -1,0 +1,22 @@
+2026-09-22 02:19:52  INFO     line_coin_ver2.phase2_test  Log file riêng cho lần chạy này: logs\phase2_jisogabe_at_gmail.com_20260922_021952.log
+2026-09-22 02:19:52  INFO     line_coin_ver2.phase2_test  [jisogabe@gmail.com] old_gift_code=5CTB4U3DCXQ2H485 old_gift_code_ministop=AGUU2NZZXUVTPFBT -> sẽ chạy airwallet=True ministop=False (source=airwallet)
+2026-09-22 02:19:52  INFO     line_coin_ver2.device  Đã map: LDPlayer[0] `LDPlayer` -> adb=emulator-5554 -> xiaowei serial=emulator-5554 onlySerial=emulator-5554 model=GFE4J
+2026-09-22 02:19:52  INFO     line_coin_ver2.phase2_test  [jisogabe@gmail.com] Bắt đầu Phase 2: ldplayer_index=0 instance=LDPlayer adb_serial=emulator-5554 xiaowei_serial=emulator-5554 source=airwallet (airwallet=True ministop=False)
+2026-09-22 02:19:52  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com][airwallet] Mở Chrome lần 1/4: https://airwallet-utapri-202609.belugacpn.jp/top?utm_source=chatgpt.com
+2026-09-22 02:20:10  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com][airwallet] Chrome first-run: bấm bỏ qua đăng nhập (`Use without an account`).
+2026-09-22 02:20:10  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com] tap(chrome-skip-account) text='Use without an account' bounds=[72,867][648,939] target_bounds=[72,867][648,939] center=(360,903)
+2026-09-22 02:20:10  INFO     line_coin_ver2.device  Tap node Button text="Use without an account" id=signin_fre_dismiss_button [72,867][648,939] tại (360, 903)
+2026-09-22 02:20:10  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com] tapped(chrome-skip-account) center=(360,903)
+2026-09-22 02:20:42  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com][airwallet] Mở Chrome lần 2/4: https://airwallet-utapri-202609.belugacpn.jp/top?utm_source=chatgpt.com
+2026-09-22 02:20:59  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com][airwallet] Chrome first-run: bấm bỏ qua đăng nhập (`No thanks`).
+2026-09-22 02:20:59  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com] tap(chrome-skip-account) text='No thanks' bounds=[317,916][449,988] target_bounds=[317,916][449,988] center=(383,952)
+2026-09-22 02:20:59  INFO     line_coin_ver2.device  Tap node Button text="No thanks" id=negative_button [317,916][449,988] tại (383, 952)
+2026-09-22 02:20:59  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com] tapped(chrome-skip-account) center=(383,952)
+2026-09-22 02:21:19  INFO     line_coin_ver2.device  Swipe (360,960) -> (360,320) trong 300ms
+2026-09-22 02:21:23  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com][airwallet] scroll #1 tìm `応募規約に同意する`: found=True bounds=[240,322][279,364]
+2026-09-22 02:21:23  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com] tap(agree-checkbox) text='応募規約に同意する' bounds=[240,322][279,364] target_bounds=[240,322][279,364] center=(259,343)
+2026-09-22 02:21:23  INFO     line_coin_ver2.device  Tap node CheckBox text="応募規約に同意する" [240,322][279,364] tại (259, 343)
+2026-09-22 02:21:23  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com] tapped(agree-checkbox) center=(259,343)
+2026-09-22 02:21:26  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com] tap(receive-button) text='ギフトコードを受け取る （LINEを認証する）' bounds=[54,385][666,484] target_bounds=[54,385][666,484] center=(360,434)
+2026-09-22 02:21:26  INFO     line_coin_ver2.device  Tap node Button text="ギフトコードを受け取る （LINEを認証する）" [54,385][666,484] tại (360, 434)
+2026-09-22 02:21:26  INFO     line_coin_ver2.phase2  [jisogabe@gmail.com] tapped(receive-button) center=(360,434)
